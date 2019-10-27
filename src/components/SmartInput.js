@@ -10,6 +10,10 @@ import {
   CompositeDecorator
 } from 'draft-js';
 
+import VariableAutocomplete from './VariablesAutocomplete';
+import UserAutocomplete from './UserAutocomplete';
+import ChannelAutocomplete from './ChannelAutocomplete';
+
 const Container = styled.div`
   padding: 16px;
   background-color: #212125;
@@ -18,7 +22,7 @@ const Container = styled.div`
   color: white;
   font-family: AvenirNext-Medium;
   font-size: 16px;
-  color: #FFFFFF;
+  color: #ffffff;
   letter-spacing: 0.01px;
   line-height: 24px;
 `;
@@ -27,11 +31,42 @@ const VariableContainer = styled.span`
   display: inline-block;
   padding: 4px 8px;
   margin: 4px;
-  background-color: #4A90E2;
+  background-color: #4a90e2;
   border-radius: 3px;
   color: white;
   font-weight: bold;
 `;
+
+function autocompleteItem(type) {
+  return ({ item, onClick, current }) => {
+    const ref = useRef(null);
+
+    useEffect(
+      () => {
+        if (current) {
+          ref.current.scrollIntoView({
+            block: 'nearest',
+            behavior: 'smooth'
+          });
+        }
+      },
+      [current]
+    );
+
+    const Component =
+      {
+        user: UserAutocomplete,
+        variable: VariableAutocomplete,
+        channel: ChannelAutocomplete
+      }[type] || (props => <span {...props} />);
+
+    return (
+      <AutocompleteItemContainer hovered={current} onClick={onClick} ref={ref}>
+        <Component item={item} />
+      </AutocompleteItemContainer>
+    );
+  };
+}
 
 const AutocompleteItemContainer = styled.div`
   cursor: pointer;
@@ -91,67 +126,76 @@ const AutocompleteContainer = styled.div`
     `}
 `;
 
-const users = ['guillaume badi', 'brendan test', 'anis blabla', 'john ok'];
+const users = [
+  { firstname: 'Guillaume', lastname: 'Jackson', username: 'weshguillaume' },
+  { firstname: 'Brendan', lastname: 'Depp', username: 'brendan' },
+  { firstname: 'Anis', lastname: 'Pit', username: 'anis' },
+  { firstname: 'John', lastname: 'Doe', username: 'jhon' },
+  { firstname: 'Paul', lastname: 'Benet', username: 'paul' }
+];
 
-const variables = ['user.name', 'server.name'];
+const variables = [
+  { name: 'user.name', description: 'Current user firstname' },
+  { name: 'server.name', description: 'Current server name' },
+  { name: 'user.username', description: 'Current user username' },
+  { name: 'server.owner', description: 'Current server owner username' }
+];
 
-const channels = ['general', 'random', 'test'];
+const channels = [
+  { name: 'random', description: 'Post about anything' },
+  { name: 'general', description: 'Anything related to the server' },
+  { name: 'test', description: 'Test channel' }
+];
 
 const variable = {
   prefix: '{',
   type: 'VARIABLE',
   mutability: 'IMMUTABLE',
-  onMatch: text => variables.filter(user => user.indexOf(text) !== -1),
+  onMatch: text =>
+    variables.filter(variable => variable.name.indexOf(text) !== -1),
   component: User,
   listComponent: ({ children }) => (
     <AutocompleteWrapper>
       <AutocompleteContainer open>{children}</AutocompleteContainer>
     </AutocompleteWrapper>
   ),
-  itemComponent: ({ item, onClick, current }) => (
-    <AutocompleteItemContainer hovered={current} onClick={onClick}>
-      <ItemContent>{item}</ItemContent>
-    </AutocompleteItemContainer>
-  ),
-  format: item => `{${item}}`
+  itemComponent: autocompleteItem('variable'),
+  format: item => `{${item.name}}`
 };
 
 const channel = {
   prefix: '#',
   type: 'CHANNEL',
   mutability: 'IMMUTABLE',
-  onMatch: text => channels.filter(user => user.indexOf(text) !== -1),
+  onMatch: text =>
+    channels.filter(channel => channel.name.indexOf(text) !== -1),
   component: User,
   listComponent: ({ children }) => (
     <AutocompleteWrapper>
       <AutocompleteContainer open>{children}</AutocompleteContainer>
     </AutocompleteWrapper>
   ),
-  itemComponent: ({ item, onClick, current }) => (
-    <AutocompleteItemContainer hovered={current} onClick={onClick}>
-      <ItemContent>{item}</ItemContent>
-    </AutocompleteItemContainer>
-  ),
-  format: item => `#${item}`
+  itemComponent: autocompleteItem('channel'),
+  format: item => `#${item.name}`
 };
 
 const user = {
   prefix: '@',
   type: 'MENTION',
   mutability: 'IMMUTABLE',
-  onMatch: text => users.filter(user => user.indexOf(text) !== -1),
+  onMatch: text =>
+    users.filter(
+      user =>
+        `${user.firstname}${user.lastname}${user.username}`.indexOf(text) !== -1
+    ),
   component: User,
   listComponent: ({ children }) => (
     <AutocompleteWrapper>
       <AutocompleteContainer open>{children}</AutocompleteContainer>
     </AutocompleteWrapper>
   ),
-  itemComponent: ({ item, onClick, current }) => (
-    <AutocompleteItemContainer hovered={current} onClick={onClick}>
-      <ItemContent>{item}</ItemContent>
-    </AutocompleteItemContainer>
-  ),
-  format: item => `@${item}`
+  itemComponent: autocompleteItem('user'),
+  format: item => `@${item.username}`
 };
 
 export function User({ children }) {
