@@ -147,7 +147,7 @@ const channels = [
   { name: 'test', description: 'Test channel' }
 ];
 
-const variable = {
+const variable = variables => ({
   prefix: '{',
   type: 'VARIABLE',
   mutability: 'IMMUTABLE',
@@ -161,9 +161,9 @@ const variable = {
   ),
   itemComponent: autocompleteItem('variable'),
   format: item => `{${item.name}}`
-};
+});
 
-const channel = {
+const channel = channels => ({
   prefix: '#',
   type: 'CHANNEL',
   mutability: 'IMMUTABLE',
@@ -177,9 +177,9 @@ const channel = {
   ),
   itemComponent: autocompleteItem('channel'),
   format: item => `#${item.name}`
-};
+});
 
-const user = {
+const user = users => ({
   prefix: '@',
   type: 'MENTION',
   mutability: 'IMMUTABLE',
@@ -196,17 +196,19 @@ const user = {
   ),
   itemComponent: autocompleteItem('user'),
   format: item => `@${item.username}`
-};
+});
 
 export function User({ children }) {
   return <VariableContainer>{children}</VariableContainer>;
 }
 
-export default function SmartInput() {
-  const [state, setState] = useState(EditorState.createEmpty());
+function SmartInput({ autocompletes, content }) {
+  const [state, setState] = useState(
+    content
+      ? EditorState.createWithContent(convertFromRaw(content))
+      : EditorState.createEmpty()
+  );
   const editor = useRef(null);
-
-  const autocompletes = [user, channel, variable];
 
   return (
     <Container>
@@ -217,5 +219,17 @@ export default function SmartInput() {
         <Editor ref={editor} editorState={state} onChange={setState} />
       </Autocomplete>
     </Container>
+  );
+}
+
+export default function Test() {
+  const autocompletes = [user(users), channel(channels), variable(variables)];
+
+  return (
+    <SmartInput
+      content={null}
+      autocompletes={autocompletes}
+      onChange={() => console.log('change')}
+    />
   );
 }
